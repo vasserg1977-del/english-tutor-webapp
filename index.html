@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>English Tutor</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+    <!-- Основной контейнер -->
+    <div class="app" id="app">
+
+        <!-- Шапка -->
+        <header class="header">
+            <div class="user-info">
+                <div class="avatar" id="avatar">👤</div>
+                <div>
+                    <div class="username" id="username">User</div>
+                    <div class="level" id="userLevel">B1 · Intermediate</div>
+                </div>
+            </div>
+            <div class="streak-badge">
+                <span class="fire">🔥</span>
+                <span id="streakDays">0</span>
+                <span>days</span>
+            </div>
+        </header>
+
+        <!-- Статистика -->
+        <section class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon">💬</div>
+                <div class="stat-value" id="totalMessages">0</div>
+                <div class="stat-label">Messages</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">📖</div>
+                <div class="stat-value" id="savedWords">0</div>
+                <div class="stat-label">Saved Words</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">⏳</div>
+                <div class="stat-value" id="dailyLimit">10</div>
+                <div class="stat-label">Remaining</div>
+            </div>
+            <div class="stat-card premium" id="premiumCard">
+                <div class="stat-icon">💎</div>
+                <div class="stat-value" id="subscriptionStatus">Free</div>
+                <div class="stat-label">Status</div>
+            </div>
+        </section>
+
+        <!-- Календарь -->
+        <section class="calendar-section">
+            <div class="calendar-header">
+                <button class="month-btn" id="prevMonth">‹</button>
+                <span id="calendarTitle">June 2026</span>
+                <button class="month-btn" id="nextMonth">›</button>
+            </div>
+            <div class="calendar-weekdays">
+                <span>Mon</span>
+                <span>Tue</span>
+                <span>Wed</span>
+                <span>Thu</span>
+                <span>Fri</span>
+                <span>Sat</span>
+                <span>Sun</span>
+            </div>
+            <div class="calendar-grid" id="calendarGrid"></div>
+        </section>
+
+        <!-- Сохраненные слова -->
+        <section class="saved-words-section">
+            <div class="section-header">
+                <span>📖 Saved Words</span>
+                <span class="word-count" id="wordCount">0</span>
+            </div>
+            <div class="words-list" id="wordsList">
+                <p class="empty">No words saved yet</p>
+            </div>
+        </section>
+
+        <!-- Настройки -->
+        <section class="settings-section">
+            <div class="section-header">⚙️ Settings</div>
+            <div class="settings-list">
+                <div class="setting-item" onclick="changeLevel()">
+                    <span>📚 Change English Level</span>
+                    <span class="setting-value" id="currentLevel">B1</span>
+                </div>
+                <div class="setting-item" onclick="changeVoice()">
+                    <span>🎤 Change Voice</span>
+                    <span class="setting-value">Jenny</span>
+                </div>
+                <div class="setting-item" onclick="changeTopics()">
+                    <span>📝 Choose Topics</span>
+                    <span class="setting-value">General</span>
+                </div>
+                <div class="setting-item" onclick="inviteFriend()">
+                    <span>👥 Invite Friends</span>
+                    <span class="setting-value">+⭐</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Premium промо -->
+        <section class="premium-promo" id="premiumPromo">
+            <div class="premium-content">
+                <div class="premium-icon">💎</div>
+                <h3>Get Unlimited Access</h3>
+                <p>Unlock all features:<br>
+                ✅ Unlimited messages<br>
+                ✅ Voice responses<br>
+                ✅ Save unlimited words<br>
+                ✅ Priority support</p>
+                <button class="premium-btn" onclick="buyPremium()">
+                    Subscribe Now — $5.99/mo
+                </button>
+            </div>
+        </section>
+
+        <!-- Нижнее меню -->
+        <nav class="bottom-nav">
+            <div class="nav-item active" data-tab="profile">
+                <span class="nav-icon">👤</span>
+                <span class="nav-label">Profile</span>
+            </div>
+            <div class="nav-item" data-tab="saved">
+                <span class="nav-icon">📖</span>
+                <span class="nav-label">Saved</span>
+            </div>
+            <div class="nav-item" data-tab="premium">
+                <span class="nav-icon">⭐</span>
+                <span class="nav-label">Premium</span>
+            </div>
+            <div class="nav-item" data-tab="settings">
+                <span class="nav-icon">⚙️</span>
+                <span class="nav-label">Settings</span>
+            </div>
+        </nav>
+
+    </div>
+    <script src="app.js"></script>
+</body>
+</html>
