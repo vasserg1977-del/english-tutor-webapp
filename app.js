@@ -387,14 +387,13 @@ function buyPremium() {
                 '✅ Voice responses\n' +
                 '✅ Save unlimited words\n' +
                 '✅ Priority support\n\n' +
-                'Price: $5.99/month',
+                'Price: 150 Stars (~$5)/month',  // ← ИСПРАВЛЕНО
         buttons: [
             { type: 'button', text: 'Subscribe Now' },
             { type: 'cancel' }
         ]
     }, (buttonId) => {
         if (buttonId === '0') {
-            // Отправляем запрос на оплату
             tg.sendData(JSON.stringify({
                 action: 'buy_premium',
                 user_id: user.id
