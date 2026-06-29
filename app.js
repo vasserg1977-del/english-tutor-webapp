@@ -4,11 +4,10 @@
 // ============================================
 
 const tg = window.Telegram.WebApp;
-tg.expand(); // Растягиваем на весь экран
+tg.expand();
 
-// Получаем данные пользователя
-const user = tg.initDataUnsafe?.user || {
-    id: Date.now(),
+const user = tg.initDataUnsafe?.user || { 
+    id: Date.now(), 
     first_name: 'User',
     username: 'user'
 };
@@ -27,7 +26,8 @@ let state = {
     currentMonth: new Date().getMonth(),
     currentYear: new Date().getFullYear(),
     streakDays: [],
-    activeTab: 'profile'
+    activeTab: 'profile',
+    dataLoaded: false
 };
 
 // ============================================
@@ -50,65 +50,61 @@ const premiumPromo = $('premiumPromo');
 const currentLevel = $('currentLevel');
 
 // ============================================
-//  Загрузка данных с бота
+//  Загрузка данных через Telegram WebApp
 // ============================================
 
-async function loadData() {
-    try {
-        // Запрос к боту через WebApp
-        const response = await fetch('/api/user-data', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                user_id: user.id,
-                action: 'get_stats'
-            })
-        });
-
-        const data = await response.json();
-
-        // Обновляем состояние
-        state.streak = data.streak || 0;
-        state.totalMessages = data.total_messages || 0;
-        state.savedWords = data.saved_words || [];
-        state.dailyLimit = data.remaining || 10;
-        state.isPremium = data.is_subscribed || false;
-        state.level = data.level || 'B1';
-        state.streakDays = data.streak_days || [];
-
-        // Обновляем UI
-        updateUI();
-
-    } catch (error) {
-        console.error('Error loading data:', error);
-        // Показываем демо-данные для теста
-        loadDemoData();
-    }
+function loadData() {
+    // Отправляем запрос к боту
+    tg.sendData(JSON.stringify({
+        action: 'get_stats',
+        user_id: user.id
+    }));
 }
 
+// Обработчик ответов от бота
+tg.onEvent('message', function(message) {
+    try {
+        const data = JSON.parse(message);
+        
+        if (data.streak !== undefined) {
+            // Это ответ на get_stats
+            state.streak = data.streak || 0;
+            state.totalMessages = data.total_messages || 0;
+            state.savedWords = data.saved_words || [];
+            state.dailyLimit = data.remaining || 10;
+            state.isPremium = data.is_subscribed || false;
+            state.level = data.level || 'B1';
+            state.streakDays = data.streak_days || [];
+            state.dataLoaded = true;
+            
+            updateUI();
+        } else if (data.success === true) {
+            // Успешное удаление слова
+            loadData(); // Перезагружаем данные
+        } else if (data.error) {
+            console.error('Error from bot:', data.error);
+        }
+    } catch (e) {
+        // Не JSON — просто игнорируем
+    }
+});
+
 // ============================================
-//  Демо-данные (для тестирования)
+//  Демо-данные (если бот не отвечает)
 // ============================================
 
 function loadDemoData() {
     username.textContent = user.first_name || 'User';
     userLevel.textContent = 'B1 · Intermediate';
-    streakDays.textContent = '5';
-    totalMessages.textContent = '23';
-    savedWords.textContent = '12';
-    dailyLimit.textContent = '7';
+    streakDays.textContent = '0';
+    totalMessages.textContent = '0';
+    savedWords.textContent = '0';
+    dailyLimit.textContent = '10';
     subscriptionStatus.textContent = 'Free';
     currentLevel.textContent = 'B1';
-
-    // Демо-слова
-    const demoWords = ['Hello', 'Beautiful', 'Understand', 'Practice', 'Improve'];
-    renderWords(demoWords);
-
-    // Демо-календарь
-    const demoStreak = [1, 2, 3, 4, 5, 8, 9, 10, 11, 12, 15, 16, 17];
-    renderCalendar(demoStreak);
+    
+    renderWords([]);
+    renderCalendar([]);
 }
 
 // ============================================
@@ -116,29 +112,23 @@ function loadDemoData() {
 // ============================================
 
 function updateUI() {
-    // Информация о пользователе
     username.textContent = user.first_name || 'User';
     userLevel.textContent = `${state.level} · ${getLevelLabel(state.level)}`;
-
-    // Статистика
+    
     streakDays.textContent = state.streak;
     totalMessages.textContent = state.totalMessages;
     savedWords.textContent = state.savedWords.length;
     dailyLimit.textContent = state.isPremium ? '∞' : state.dailyLimit;
     subscriptionStatus.textContent = state.isPremium ? 'Premium' : 'Free';
     currentLevel.textContent = state.level;
-
-    // Скрываем/показываем Premium промо
+    
     if (state.isPremium) {
         premiumPromo.classList.add('hidden');
     } else {
         premiumPromo.classList.remove('hidden');
     }
-
-    // Слова
+    
     renderWords(state.savedWords);
-
-    // Календарь
     renderCalendar(state.streakDays);
 }
 
@@ -149,44 +139,39 @@ function updateUI() {
 function renderCalendar(streakDays) {
     const month = state.currentMonth;
     const year = state.currentYear;
-
+    
     calendarTitle.textContent = `${getMonthName(month)} ${year}`;
-
+    
     const firstDay = new Date(year, month, 1).getDay();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
-
-    // Корректируем для понедельника как первого дня
+    
     let startOffset = firstDay === 0 ? 6 : firstDay - 1;
-
+    
     calendarGrid.innerHTML = '';
-
-    // Пустые ячейки
+    
     for (let i = 0; i < startOffset; i++) {
         const empty = document.createElement('div');
         empty.className = 'calendar-day empty';
         calendarGrid.appendChild(empty);
     }
-
-    // Дни месяца
+    
     const today = new Date().getDate();
     const todayMonth = new Date().getMonth();
     const todayYear = new Date().getFullYear();
-
+    
     for (let day = 1; day <= daysInMonth; day++) {
         const div = document.createElement('div');
         div.className = 'calendar-day';
         div.textContent = day;
-
-        // Сегодня
+        
         if (day === today && month === todayMonth && year === todayYear) {
             div.classList.add('active');
         }
-
-        // Дни со стриком
+        
         if (streakDays && streakDays.includes(day)) {
             div.classList.add('has-streak');
         }
-
+        
         calendarGrid.appendChild(div);
     }
 }
@@ -216,15 +201,14 @@ function getLevelLabel(level) {
 function renderWords(words) {
     wordsList.innerHTML = '';
     wordCount.textContent = words.length;
-
+    
     if (!words || words.length === 0) {
         wordsList.innerHTML = '<p class="empty">No words saved yet</p>';
         return;
     }
-
-    // Показываем последние 20 слов
+    
     const displayWords = words.slice(-20);
-
+    
     displayWords.forEach(word => {
         const item = document.createElement('div');
         item.className = 'word-item';
@@ -237,27 +221,12 @@ function renderWords(words) {
 }
 
 async function deleteWord(word) {
-    try {
-        const response = await fetch('/api/delete-word', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                user_id: user.id,
-                word: word
-            })
-        });
-
-        if (response.ok) {
-            // Удаляем из локального состояния
-            state.savedWords = state.savedWords.filter(w => w !== word);
-            renderWords(state.savedWords);
-            savedWords.textContent = state.savedWords.length;
-        }
-    } catch (error) {
-        console.error('Error deleting word:', error);
-    }
+    // Отправляем запрос на удаление через Telegram WebApp
+    tg.sendData(JSON.stringify({
+        action: 'delete_word',
+        user_id: user.id,
+        word: word
+    }));
 }
 
 // ============================================
@@ -266,21 +235,19 @@ async function deleteWord(word) {
 
 document.querySelectorAll('.nav-item').forEach(item => {
     item.addEventListener('click', function() {
-        // Убираем активный класс у всех
         document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
         this.classList.add('active');
-
+        
         const tab = this.dataset.tab;
         state.activeTab = tab;
-
-        // Прокручиваем к соответствующей секции
+        
         const sections = {
             'profile': 0,
             'saved': document.querySelector('.saved-words-section'),
             'premium': document.querySelector('.premium-promo'),
             'settings': document.querySelector('.settings-section')
         };
-
+        
         if (tab === 'profile') {
             window.scrollTo({ top: 0, behavior: 'smooth' });
         } else if (sections[tab]) {
@@ -312,70 +279,6 @@ document.getElementById('nextMonth').addEventListener('click', () => {
 });
 
 // ============================================
-//  Настройки
-// ============================================
-
-function changeLevel() {
-    const levels = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
-    const currentIndex = levels.indexOf(state.level);
-    const nextIndex = (currentIndex + 1) % levels.length;
-    state.level = levels[nextIndex];
-
-    // Отправляем на сервер
-    fetch('/api/update-level', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            user_id: user.id,
-            level: state.level
-        })
-    });
-
-    currentLevel.textContent = state.level;
-    userLevel.textContent = `${state.level} · ${getLevelLabel(state.level)}`;
-    tg.showPopup({
-        title: 'Level Updated',
-        message: `Your level is now ${state.level} (${getLevelLabel(state.level)})`,
-        buttons: [{ type: 'ok' }]
-    });
-}
-
-function changeVoice() {
-    tg.showPopup({
-        title: 'Voice Settings',
-        message: 'Choose a voice for your tutor:',
-        buttons: [
-            { type: 'button', text: 'Jenny 🇺🇸' },
-            { type: 'button', text: 'James 🇬🇧' },
-            { type: 'button', text: 'Sophie 🇦🇺' }
-        ]
-    });
-}
-
-function changeTopics() {
-    tg.showPopup({
-        title: 'Choose Topics',
-        message: 'What do you want to learn about?',
-        buttons: [
-            { type: 'button', text: 'General' },
-            { type: 'button', text: 'Business' },
-            { type: 'button', text: 'Travel' },
-            { type: 'button', text: 'Technology' }
-        ]
-    });
-}
-
-function inviteFriend() {
-    tg.showPopup({
-        title: 'Invite Friends',
-        message: 'Share this bot with your friends and get rewards!',
-        buttons: [{ type: 'ok' }]
-    });
-}
-
-// ============================================
 //  Покупка Premium
 // ============================================
 
@@ -387,7 +290,7 @@ function buyPremium() {
                 '✅ Voice responses\n' +
                 '✅ Save unlimited words\n' +
                 '✅ Priority support\n\n' +
-                'Price: 150 Stars (~$5)/month',  // ← ИСПРАВЛЕНО
+                'Price: 150 Stars (~$5)/month',
         buttons: [
             { type: 'button', text: 'Subscribe Now' },
             { type: 'cancel' }
@@ -406,13 +309,15 @@ function buyPremium() {
 //  Инициализация
 // ============================================
 
-// Загружаем данные
+// Показываем демо-данные сразу
+loadDemoData();
+
+// Загружаем реальные данные
 loadData();
 
-// Обновляем данные каждые 60 секунд
-setInterval(loadData, 60000);
+// Обновляем каждые 30 секунд
+setInterval(loadData, 30000);
 
-// Сообщаем Telegram, что приложение готово
 tg.ready();
 
 console.log('🚀 English Tutor App initialized!');
