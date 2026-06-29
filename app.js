@@ -54,15 +54,23 @@ const currentLevel = $('currentLevel');
 // ============================================
 
 function loadData() {
+    console.log('🔄 Loading data from bot...');
     // Отправляем запрос к боту
     tg.sendData(JSON.stringify({
         action: 'get_stats',
         user_id: user.id
     }));
+    
+    // Показываем индикатор загрузки
+    document.getElementById('streakDays').textContent = '...';
+    document.getElementById('totalMessages').textContent = '...';
+    document.getElementById('savedWords').textContent = '...';
 }
 
 // Обработчик ответов от бота (через WebApp)
 tg.onEvent('message', function(message) {
+    console.log('📨 Received from bot:', message);
+    
     try {
         const data = JSON.parse(message);
         
@@ -77,15 +85,16 @@ tg.onEvent('message', function(message) {
             state.streakDays = data.streak_days || [];
             state.dataLoaded = true;
             
+            console.log('✅ Data loaded:', state.savedWords.length, 'words');
             updateUI();
         } else if (data.success === true) {
             // Успешное удаление слова
-            loadData(); // Перезагружаем данные
+            console.log('🗑️ Word deleted, reloading...');
+            loadData();
         } else if (data.error) {
-            console.error('Error from bot:', data.error);
+            console.error('❌ Error from bot:', data.error);
         }
     } catch (e) {
-        // Не JSON — просто игнорируем
         console.log('Not a JSON message:', message);
     }
 });
@@ -203,6 +212,7 @@ function renderWords(words) {
 }
 
 function deleteWord(word) {
+    console.log('🗑️ Deleting word:', word);
     // Отправляем запрос на удаление через Telegram WebApp
     tg.sendData(JSON.stringify({
         action: 'delete_word',
@@ -210,7 +220,7 @@ function deleteWord(word) {
         word: word
     }));
     
-    // Удаляем локально и обновляем UI
+    // Удаляем локально и обновляем UI (оптимистичное обновление)
     state.savedWords = state.savedWords.filter(w => w !== word);
     renderWords(state.savedWords);
     savedWords.textContent = state.savedWords.length;
