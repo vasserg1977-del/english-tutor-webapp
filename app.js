@@ -61,7 +61,7 @@ function loadData() {
     }));
 }
 
-// Обработчик ответов от бота
+// Обработчик ответов от бота (через WebApp)
 tg.onEvent('message', function(message) {
     try {
         const data = JSON.parse(message);
@@ -86,26 +86,9 @@ tg.onEvent('message', function(message) {
         }
     } catch (e) {
         // Не JSON — просто игнорируем
+        console.log('Not a JSON message:', message);
     }
 });
-
-// ============================================
-//  Демо-данные (если бот не отвечает)
-// ============================================
-
-function loadDemoData() {
-    username.textContent = user.first_name || 'User';
-    userLevel.textContent = 'B1 · Intermediate';
-    streakDays.textContent = '0';
-    totalMessages.textContent = '0';
-    savedWords.textContent = '0';
-    dailyLimit.textContent = '10';
-    subscriptionStatus.textContent = 'Free';
-    currentLevel.textContent = 'B1';
-    
-    renderWords([]);
-    renderCalendar([]);
-}
 
 // ============================================
 //  Обновление UI
@@ -144,7 +127,6 @@ function renderCalendar(streakDays) {
     
     const firstDay = new Date(year, month, 1).getDay();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
-    
     let startOffset = firstDay === 0 ? 6 : firstDay - 1;
     
     calendarGrid.innerHTML = '';
@@ -220,13 +202,18 @@ function renderWords(words) {
     });
 }
 
-async function deleteWord(word) {
+function deleteWord(word) {
     // Отправляем запрос на удаление через Telegram WebApp
     tg.sendData(JSON.stringify({
         action: 'delete_word',
         user_id: user.id,
         word: word
     }));
+    
+    // Удаляем локально и обновляем UI
+    state.savedWords = state.savedWords.filter(w => w !== word);
+    renderWords(state.savedWords);
+    savedWords.textContent = state.savedWords.length;
 }
 
 // ============================================
@@ -309,14 +296,11 @@ function buyPremium() {
 //  Инициализация
 // ============================================
 
-// Показываем демо-данные сразу
-loadDemoData();
-
 // Загружаем реальные данные
 loadData();
 
-// Обновляем каждые 30 секунд
-setInterval(loadData, 30000);
+// Обновляем каждые 10 секунд (чтобы сразу видеть новые слова)
+setInterval(loadData, 10000);
 
 tg.ready();
 
