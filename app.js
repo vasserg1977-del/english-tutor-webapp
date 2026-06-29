@@ -55,6 +55,13 @@ const currentLevel = $('currentLevel');
 
 function loadData() {
     console.log('🔄 Loading data from bot...');
+    
+    // Проверяем, что WebApp инициализирован
+    if (!tg) {
+        console.error('❌ WebApp not initialized');
+        return;
+    }
+    
     // Отправляем запрос к боту
     tg.sendData(JSON.stringify({
         action: 'get_stats',
@@ -213,14 +220,12 @@ function renderWords(words) {
 
 function deleteWord(word) {
     console.log('🗑️ Deleting word:', word);
-    // Отправляем запрос на удаление через Telegram WebApp
     tg.sendData(JSON.stringify({
         action: 'delete_word',
         user_id: user.id,
         word: word
     }));
     
-    // Удаляем локально и обновляем UI (оптимистичное обновление)
     state.savedWords = state.savedWords.filter(w => w !== word);
     renderWords(state.savedWords);
     savedWords.textContent = state.savedWords.length;
@@ -303,14 +308,32 @@ function buyPremium() {
 }
 
 // ============================================
-//  Инициализация
+//  ИНИЦИАЛИЗАЦИЯ
 // ============================================
 
-// Загружаем реальные данные
-loadData();
+// Сначала показываем демо-данные (чтобы не было пусто)
+function loadDemoData() {
+    username.textContent = user.first_name || 'User';
+    userLevel.textContent = 'B1 · Intermediate';
+    streakDays.textContent = '0';
+    totalMessages.textContent = '0';
+    savedWords.textContent = '0';
+    dailyLimit.textContent = '10';
+    subscriptionStatus.textContent = 'Free';
+    currentLevel.textContent = 'B1';
+    renderWords([]);
+    renderCalendar([]);
+}
 
-// Обновляем каждые 10 секунд (чтобы сразу видеть новые слова)
-setInterval(loadData, 10000);
+loadDemoData();
+
+// Через 1 секунду пытаемся загрузить реальные данные
+setTimeout(() => {
+    loadData();
+}, 1000);
+
+// Обновляем каждые 30 секунд
+setInterval(loadData, 30000);
 
 tg.ready();
 
